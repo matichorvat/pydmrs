@@ -108,6 +108,9 @@ def match_node(node, node_args, **params):
             if params.get('tense') and params.get('tense') == node_info.attrib.get('tense'):
                 del params['tense']
 
+            if params.get('tense') and isinstance(params.get('tense'), list) and node_info.attrib.get('tense') in params.get('tense'):
+                del params['tense']
+
             if params.get('perf') and params.get('perf') == node_info.attrib.get('perf'):
                 del params['perf']
 
@@ -124,8 +127,16 @@ def match_node(node, node_args, **params):
                 del params['gpred_rel']
 
     if params.get('args_or'):
-        if match_arg(params.get('args_or'), node_args):
+        if match_arg_or(params.get('args_or'), node_args):
             del params['args_or']
+
+    if params.get('args_and'):
+        if match_arg_and(params.get('args_and'), node_args):
+            del params['args_and']
+
+    if params.get('args_no'):
+        if match_arg_no(params.get('args_no'), node_args):
+            del params['args_no']
 
     if len(params) == 0:
         return True
@@ -133,13 +144,37 @@ def match_node(node, node_args, **params):
         return False
 
 
-def match_arg(arg_or_list, node_args):
+def match_arg_or(arg_or_list, node_args):
     for link_label, node in node_args:
         for link_label_param, node_params in arg_or_list:
             if link_label == link_label_param and match_node(node, [], **node_params):
                 return True
 
     return False
+
+
+def match_arg_and(arg_and_list, node_args):
+
+    for link_label_param, node_params in arg_and_list:
+        matched = False
+        for link_label, node in node_args:
+            if link_label == link_label_param and match_node(node, [], **node_params):
+                matched = True
+                break
+
+        if not matched:
+            return False
+
+    return True
+
+
+def match_arg_no(arg_no_list, node_args):
+    for link_label, node in node_args:
+        for link_label_param, node_params in arg_no_list:
+            if link_label == link_label_param and match_node(node, [], **node_params):
+                return False
+
+    return True
 
 
 COPULA_GPRED = (nearest, {'limit': 5, 'gpred': True, 'gpred_rel': ['unspec_mod_rel', 'unspec_manner_rel',
@@ -149,7 +184,7 @@ COPULA_GPRED = (nearest, {'limit': 5, 'gpred': True, 'gpred_rel': ['unspec_mod_r
 HEURISTIC_DICT = {'do': [(nearest_right, {'realpred': True, 'pos': 'v', 'tense': 'pres'})],
                   'does': [(nearest_right, {'realpred': True, 'pos': 'v', 'tense': 'pres'})],
                   'did': [(nearest_right, {'realpred': True, 'pos': 'v', 'tense': 'past'})],
-                  'have': [(nearest_right, {'limit': 5, 'realpred': True, 'pos': 'v', 'tense': 'pres'})],
+                  'have': [(nearest_right, {'limit': 5, 'realpred': True, 'pos': 'v', 'tense': ['pres', 'untensed']})],
                   'has': [(nearest_right, {'limit': 5, 'realpred': True, 'pos': 'v', 'tense': 'pres'})],
                   'had': [(nearest_right, {'limit': 5, 'realpred': True, 'pos': 'v', 'tense': 'past'})],
                   'both': [(nearest_right, {'realpred': True, 'lemma': 'and', 'pos': 'c'})],
@@ -220,15 +255,24 @@ HEURISTIC_DICT = {'do': [(nearest_right, {'realpred': True, 'pos': 'v', 'tense':
                   'and': [(nearest, {'limit': 3, 'gpred': True, 'gpred_rel': ['times_rel', 'fraction_rel']}),
                           (nearest_left, {'realpred': True, 'lemma': 'try', 'pos': 'v', 'sense': '1'})],
                   'but': [(nearest_left, {'realpred': True, 'lemma': 'help', 'pos': 'v', 'sense': 'but'})],
-                  'to': [(nearest_right, {'realpred': True, 'pos': 'v', 'tense': 'untensed'}),
-                         (nearest_right, {'realpred': True, 'lemma': 'for', 'pos': 'x', 'sense': 'cond'}),
+                  'to': [(nearest_right, {'realpred': True, 'lemma': 'for', 'pos': 'x', 'sense': 'cond'}),
                          (nearest_right, {'realpred': True, 'lemma': 'in+order+to', 'pos': 'x'}),
-                         (nearest, {'limit': 3, 'realpred': True, 'sense_regex': re.compile('-?to(-[^_]+)?')})],
+                         (nearest, {'limit': 3, 'realpred': True, 'sense_regex': re.compile('-?to(-[^_]+)?')}),
+                         (nearest_left, {'realpred': True, 'pos': 'v', 'args_and': [('ARG2/NEQ', {'realpred': True, 'pos': 'n'}),
+                                                                                    ('ARG3/NEQ', {'realpred': True, 'pos': 'n'})]}),
+                         (nearest_right, {'limit': 5, 'realpred': True, 'pos': 'v', 'tense': 'untensed'})],
                   'as': [(nearest, {'limit': 3, 'realpred': True, 'sense_regex': re.compile('-?as(-[^_]+)?')}),
                          (nearest, {'limit': 5, 'gpred': True, 'gpred_rel': 'comp_equal_rel'})],
                   'as to': [(nearest, {'limit': 3, 'realpred': True, 'sense_regex': re.compile('-?as\+to(-[^_]+)?')})],
                   'by': [(nearest, {'limit': 3, 'realpred': True, 'sense': 'by'}),
                          (nearest_left, {'realpred': True, 'pos': 'v'})],
+                  'for': [(nearest, {'limit': 3, 'realpred': True, 'sense_regex': re.compile('-?for(-[^_]+)?')}),
+                          (nearest_right, {'realpred': True, 'pos': 'v', 'tense': 'untensed'}),
+                          (nearest_right, {'realpred': True, 'pos': 'v', 'tense': 'no_tense'})],
+                  'if': [(nearest_left, {'realpred': True, 'pos': 'v', 'args_or': [('ARG1/H', {}), ('ARG2/H', {}), ('ARG3/H', {})]})],
+                  'it': [(nearest_right, {'realpred': True, 'pos': 'v', 'args_no': [('ARG1', {})]}),
+                         (nearest_right, {'realpred': True, 'pos': 'v', 'args_or': [('ARG1/H', {})]})],
+                  'like': [(nearest_left, {'realpred': True, 'pos': 'v', 'args_or': [('ARG1/H', {}), ('ARG2/H', {}), ('ARG3/H', {})]})],
                   'of': [(nearest, {'limit': 3, 'realpred': True, 'sense_regex': re.compile('-?of(-[^_]+)?')}),
                          (nearest, {'limit': 5, 'gpred': True, 'gpred_rel': ['part_of_rel', 'day_rel', 'mofy_rel',
                                                                              'place_n_rel', 'day_part_rel', 'def_day_part_rel',
@@ -236,13 +280,17 @@ HEURISTIC_DICT = {'do': [(nearest_right, {'realpred': True, 'pos': 'v', 'tense':
                          (nearest, {'limit': 3, 'realpred': True, 'sense': 'ofj'})],
                   'out of': [(nearest, {'limit': 3, 'realpred': True, 'sense_regex': re.compile('-?out\+of(-[^_]+)?')})],
                   'round': [(nearest, {'limit': 3, 'realpred': True, 'sense_regex': re.compile('-?around(-[^_]+)?')})],
+                  'than': [(nearest, {'limit': 3, 'realpred': True, 'sense_regex': re.compile('-?than(-[^_]+)?')}),
+                           (nearest, {'limit': 5, 'gpred': True, 'gpred_rel': ['comp_rel', 'comp_less_rel']})],
                   'upside down': [(nearest, {'limit': 3, 'realpred': True, 'sense_regex': re.compile('-?upside\+down(-[^_]+)?')})],
+                  'whether': [(nearest_left, {'realpred': True, 'pos': 'v', 'args_or': [('ARG1/H', {}), ('ARG2/H', {}), ('ARG3/H', {})]})],
+                  'whether or not': [(nearest_left, {'realpred': True, 'pos': 'v', 'args_or': [('ARG1/H', {}), ('ARG2/H', {}), ('ARG3/H', {})]})],
                   }
 
 SENSE_LIST = ['aback', 'across', 'after', 'against', 'ahead', 'along', 'among', 'apart', 'around', 'aside',
-              'at', 'away', 'back', 'behind', 'between', 'down', 'even', 'for', 'forth', 'forward', 'from',
+              'at', 'away', 'back', 'behind', 'between', 'down', 'even', 'forth', 'forward', 'from',
               'go', 'in', 'into', 'off', 'on', 'onto', 'onward', 'onwards', 'open', 'out', 'over', 'short',
-              'so', 'still', 'home', 'thin', 'through', 'than', 'together', 'toward', 'towards', 'under',
+              'so', 'still', 'home', 'thin', 'through', 'together', 'toward', 'towards', 'under',
               'until', 'up', 'upon', 'with', 'without', 'yet']
 
 SENSE_DICT = dict((string, [(nearest, {'limit': 3, 'realpred': True, 'sense_regex': re.compile('-?%s(-[^_]+)?' % string)})]) for string in SENSE_LIST)

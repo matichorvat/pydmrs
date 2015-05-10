@@ -1,6 +1,6 @@
 from collections import defaultdict
 
-from utility import pairwise, contains_sublist
+from utility import pairwise, triple, contains_sublist
 from unaligned_tokens_heuristics import HEURISTIC_DICT
 
 
@@ -19,10 +19,26 @@ def align(dmrs_xml, tok_list, debug=False):
     # Find unaligned tokens and current alignment information
     unaligned_tokens, toks_to_nodes = get_unaligned_tokens(dmrs_xml, len(tok_list))
 
-    # Attempt to align each pair of unaligned tokens
     tok_to_node_alignment = dict()
     node_to_tok_alignment = defaultdict(list)
 
+    # Attempt to align each triple of unaligned tokens
+    for untoken_index_1, untoken_index_2, untoken_index_3 in triple(unaligned_tokens):
+
+        if untoken_index_1 + 1 != untoken_index_2 or untoken_index_2 + 1 != untoken_index_3:
+            continue
+
+        untoken_index_range = (untoken_index_1, untoken_index_3)
+
+        node_index = align_unaligned_token(untoken_index_range, tok_list, toks_to_nodes)
+
+        if node_index is not None:
+            tok_to_node_alignment[untoken_index_1] = node_index
+            tok_to_node_alignment[untoken_index_2] = node_index
+            tok_to_node_alignment[untoken_index_3] = node_index
+            node_to_tok_alignment[node_index].extend([untoken_index_1, untoken_index_2, untoken_index_3])
+
+    # Attempt to align each pair of unaligned tokens
     for untoken_index_1, untoken_index_2 in pairwise(unaligned_tokens):
 
         if untoken_index_1 + 1 != untoken_index_2:
