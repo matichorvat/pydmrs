@@ -28,12 +28,15 @@ def create_label(dmrs_xml, carg_clean=False):
 
             # Construct the label attribute
             attribs_of_interest = [node_attribs.get('carg'), node_attribs.get('gpred'),
-                                   node_attribs.get('lemma'), node_attribs.get('sense'),
-                                   node_attribs.get('pos'), node_attribs.get('pers'),
+                                   node_attribs.get('lemma'), node_attribs.get('pos'),
+                                   node_attribs.get('sense'), node_attribs.get('pers'),
                                    node_attribs.get('num'), node_attribs.get('tense'),
                                    node_attribs.get('gend')]
 
             label = '_'.join([unicode(x) for x in attribs_of_interest if x is not None and x.lower() != 'untensed'])
+
+            if node_attribs.get('gpred') is None:
+                label = '_' + label
 
             # Attach the label to node XML
             entity.attrib['label'] = label
