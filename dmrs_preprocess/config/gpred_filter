@@ -2,7 +2,6 @@ KEEP
 generic_entity_rel
 basic_card_rel
 compound_name_rel
-nominalization_rel
 place_n_rel
 
 card_rel
@@ -109,3 +108,4 @@ v_event_rel
 
 ellipsis_ref_rel
 addressee_rel
+nominalization_rel
