@@ -146,6 +146,9 @@ def match_token(untok_string, tok_string):
     if untok_nopunc == tok_string or untok_nopunc.lower() == tok_string:
         return True
 
+    if untok_string[:-1] == tok_string or untok_string[:-1].lower() == tok_string:
+        return True
+
     if Levenshtein.ratio(untok_string, tok_string) > LEVENSHTEIN_RATIO:
         return True
 
@@ -167,5 +170,3 @@ def find_end(target_end, char_spans):
             return start, end
 
     return None
-
-
