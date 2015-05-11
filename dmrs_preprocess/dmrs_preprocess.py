@@ -14,9 +14,8 @@ import remove_ltop
 from utility import empty
 
 
-def extract_dmrs(file_content):
-    dmrs_chunks = file_content.split('\n\n')
-    return filter(lambda x: x.strip() != '', dmrs_chunks)
+def split_dmrs_file(content):
+    return filter(lambda x: x.strip() != '', [x + '</dmrs>' if x.strip() != '' else x for x in content.split('</dmrs>')])
 
 
 def read_file(filename, format='dmrs'):
@@ -24,7 +23,7 @@ def read_file(filename, format='dmrs'):
         content = f.read().decode('utf-8').strip()
 
         if format == 'dmrs':
-            return extract_dmrs(content)
+            return split_dmrs_file(content)
         elif format == 'untok':
             return [sent.strip() for sent in content.split('\n')]
         elif format == 'tok':
@@ -99,7 +98,7 @@ def process(dmrs, untok, tok,
 
 if __name__ == '__main__':
 
-    parser = argparse.ArgumentParser(description='DMRS to tokenized string aligner.')
+    parser = argparse.ArgumentParser(description='DMRS preprocessing tool.')
     parser.add_argument('-t', '--token_align', action='store_true',
                         help='Align tokens to nodes.')
     parser.add_argument('-u', '--unaligned_align', action='store_true',
@@ -151,3 +150,6 @@ if __name__ == '__main__':
                                  attach_tok=args.attach_tok)
         
         out.write('%s\n\n' % dmrs_processed)
+
+    if args.output != '-':
+        out.close()
