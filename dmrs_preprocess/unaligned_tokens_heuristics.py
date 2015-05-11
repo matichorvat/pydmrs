@@ -242,7 +242,7 @@ HEURISTIC_DICT = {'do': [(nearest_right, {'realpred': True, 'pos': 'v', 'tense':
                           (nearest_right, {'realpred': True, 'lemma': 'be', 'pos': 'v', 'sense': 'itcleft'}),
                           (nearest_right, {'realpred': True, 'pos': ['v', 'a', 'p']}),
                           COPULA_GPRED],
-                  'that': [(nearest_left, {'realpred': True, 'pos': 'v', 'args_or': [('ARG2/H', {}), ('ARG3/EH', {})]}),
+                  'that': [(nearest_left, {'realpred': True, 'pos': ['v', 'a', 'n'], 'args_or': [('ARG1/H', {}), ('ARG2/H', {}), ('ARG3/H', {})]}),
                            (nearest_right, {'realpred': True, 'pos': 'v', 'args_or': [('ARG1/H', {})]}),
                            (nearest_right, {'realpred': True, 'pos': 'v', 'args_or': [('ARG1/EQ', {'realpred': True, 'pos': 'n'}),
                                                                                       ('ARG2/EQ', {'realpred': True, 'pos': 'n'}),
