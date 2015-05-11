@@ -54,6 +54,7 @@ def process(dmrs, untok, tok,
             label_opt=False,
             remove_ltop_opt=False,
             gpred_filter=None,
+            gpred_curb_opt=None,
             attach_untok=False,
             attach_tok=False):
 
@@ -77,6 +78,9 @@ def process(dmrs, untok, tok,
             sys.stderr.write('Warning: Token alignment needed before attempting to align unaligned tokens.')
 
         dmrs_xml = unaligned_tokens_align.align(dmrs_xml, tok)
+
+    if gpred_curb_opt:
+        dmrs_xml = filter_gpred.curb_gpred_spans(dmrs_xml)
 
     if punc_opt:
         pass
@@ -108,6 +112,8 @@ if __name__ == '__main__':
                         help='Remove LTOP link originating from non-existing node with id 0.')
     parser.add_argument('-f', '--filter_gpred', default=None,
                         help='Filter out unneeded general predicate nodes and links. Specify filename with the filter.')
+    parser.add_argument('-g', '--gpred_curb', default=None, type=int,
+                        help='Curb the spans of general predicate nodes to the specified number of tokens. If exceeded, the alignment for the node is removed.')
     parser.add_argument('-au', '--attach_untok', action='store_true', help='Attach the untokenized sentence to DMRS.')
     parser.add_argument('-at', '--attach_tok', action='store_true', help='Attach the tokenized sentence to DMRS.')
     parser.add_argument('input_dmrs', help='Specify input dmrs file')
@@ -140,6 +146,7 @@ if __name__ == '__main__':
                                  label_opt=args.label,
                                  remove_ltop_opt=args.remove_ltop,
                                  gpred_filter=gpred_filter,
+                                 gpred_curb_opt=args.gpred_curb,
                                  attach_untok=args.attach_untok,
                                  attach_tok=args.attach_tok)
         

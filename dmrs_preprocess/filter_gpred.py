@@ -138,3 +138,36 @@ def bf(graph):
         explore_list = filter(lambda x: x in unvisited, new_explore_list)
 
     return unvisited
+
+
+def curb_gpred_spans(dmrs_xml, max_tokens=3):
+    '''
+    Remove general predicate node token alignments if a general predicate node spans more than max_tokens.
+    This prevents general predicate nodes from dominating rule extraction.
+    :param dmrs_xml: Input DMRS XML
+    :param max_tokens: Maximum number of allowed tokens before the entire general predicate node span is removed
+    :return: Modified DMRS
+    '''
+
+    for entity in dmrs_xml:
+        if entity.tag != 'node':
+            continue
+
+        # Determine if the node is a general predicate
+        gpred_node = False
+        for node_info in entity:
+            if node_info.tag == 'gpred':
+                gpred_node = True
+                break
+
+        if not gpred_node:
+            continue
+
+        # Remove the alignment if the number of tokens exceeds the specified limit
+        tokalign = entity.attrib.get('tokalign')
+        gpred_token_num = len(tokalign.split(' '))
+
+        if gpred_token_num > max_tokens:
+            entity.attrib['tokalign'] = ''
+
+    return dmrs_xml
