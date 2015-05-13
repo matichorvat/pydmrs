@@ -3,6 +3,7 @@ generic_entity_rel
 basic_card_rel
 compound_name_rel
 place_n_rel
+addressee_rel
 
 card_rel
 dofm_rel
@@ -107,5 +108,4 @@ unspec_adj_rel
 v_event_rel
 
 ellipsis_ref_rel
-addressee_rel
 nominalization_rel
