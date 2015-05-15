@@ -166,7 +166,7 @@ if __name__ == '__main__':
                 dmrs_xml = xml.fromstring(dmrs.encode('utf-8'), parser=parser)
 
                 if empty(dmrs_xml):
-                    out.write('%s\n\n' % dmrs))
+                    out.write('%s\n\n' % dmrs)
                 else:
                     wdmrs = wmap.wmap_sentence(dmrs_xml)
                     out.write('%s\n\n' % xml.tostring(wdmrs, encoding='utf-8'))
