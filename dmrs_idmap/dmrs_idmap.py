@@ -13,6 +13,14 @@ def split_dmrs_file(content):
     return filter(lambda x: x.strip() != '', [x + '</dmrs>' if x.strip() != '' else x for x in content.split('</dmrs>')])
 
 
+def empty(dmrs_xml):
+    count = 0
+    for child in dmrs_xml:
+        return False
+
+    return True
+
+
 def read_file(filename):
     with open(filename, 'rb') as f:
         content = f.read().decode('utf-8').strip()
@@ -156,8 +164,12 @@ if __name__ == '__main__':
             for dmrs in dmrs_list:
                 parser = xml.XMLParser(encoding='utf-8')
                 dmrs_xml = xml.fromstring(dmrs.encode('utf-8'), parser=parser)
-                wdmrs = wmap.wmap_sentence(dmrs_xml)
-                out.write('%s\n\n' % xml.tostring(wdmrs, encoding='utf-8'))
+
+                if empty(dmrs_xml):
+                    out.write('%s\n\n' % dmrs))
+                else:
+                    wdmrs = wmap.wmap_sentence(dmrs_xml)
+                    out.write('%s\n\n' % xml.tostring(wdmrs, encoding='utf-8'))
 
     if args.output != '-':
         out.close()
