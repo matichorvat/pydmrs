@@ -30,8 +30,8 @@ def create_label(dmrs_xml, carg_clean=False):
             attribs_of_interest = [node_attribs.get('carg'), node_attribs.get('gpred'),
                                    node_attribs.get('lemma'), node_attribs.get('pos'),
                                    node_attribs.get('sense'), node_attribs.get('pers'),
-                                   node_attribs.get('num'), node_attribs.get('tense') if node_attribs.get('tense').lower() != 'untensed',
-                                   node_attribs.get('gend'), node_attribs.get('sf') if node_attribs.get('sf') != 'prop']
+                                   node_attribs.get('num'), node_attribs.get('tense') if node_attribs.get('tense').lower() != 'untensed' else None,
+                                   node_attribs.get('gend'), node_attribs.get('sf') if node_attribs.get('sf') != 'prop' else None]
 
             label = '_'.join([unicode(x) for x in attribs_of_interest if x is not None])
 
