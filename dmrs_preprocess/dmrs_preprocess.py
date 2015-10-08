@@ -5,6 +5,7 @@ import errno
 import sys
 import argparse
 import xml.etree.ElementTree as xml
+from xml.etree.ElementTree import ParseError
 
 import token_align
 import unaligned_tokens_align
@@ -15,7 +16,10 @@ from utility import empty
 
 
 def split_dmrs_file(content):
-    return filter(lambda x: x.strip() != '', [x + '</dmrs>' if x.strip() != '' else x for x in content.split('</dmrs>')])
+    content_split = content.split('<dmrs')
+    content_filter = filter(lambda x: x.strip() != '', content_split)
+    content_fixed = [('<dmrs' + x).strip() for x in content_filter]
+    return content_fixed
 
 
 def read_file(filename, format='dmrs'):
@@ -58,7 +62,13 @@ def process(dmrs, untok, tok,
             attach_tok=False):
 
     parser = xml.XMLParser(encoding='utf-8')
-    dmrs_xml = xml.fromstring(dmrs.encode('utf-8'), parser=parser)
+
+    try:
+        dmrs_xml = xml.fromstring(dmrs.encode('utf-8'), parser=parser)
+
+    except ParseError:
+        sys.stderr.write(dmrs + "\n")
+        raise
 
     if empty(dmrs_xml):
         return dmrs
@@ -93,7 +103,9 @@ def process(dmrs, untok, tok,
     if attach_tok:
         dmrs_xml.attrib['tok'] = ' '.join(tok)
 
-    return xml.tostring(dmrs_xml, encoding='utf-8')
+    dmrs_string = xml.tostring(dmrs_xml, encoding='utf-8')
+
+    return dmrs_string
 
 
 if __name__ == '__main__':

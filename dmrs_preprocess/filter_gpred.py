@@ -60,10 +60,11 @@ def filter_gpred(dmrs_xml, gpred_filter):
     already_disconnected = not is_connected(dmrs_xml)
 
     for node_id, node in remove_nodes.items():
-        if not already_disconnected and not is_connected(dmrs_xml, removed_nodes=removed_node_ids | {node_id}, to_remove=remove_nodes):
+        if not already_disconnected and not is_connected(dmrs_xml, removed_nodes=(removed_node_ids | {node_id}), to_remove=remove_nodes):
             #print 'Removing node with id %s would result in a disconnected graph, so we are not.' % node_id
-            pass
+            continue
         else:
+            removed_node_ids.add(node_id)
             removed_nodes[node_id] = node
 
     # Actually remove nodes
@@ -84,6 +85,7 @@ def filter_gpred(dmrs_xml, gpred_filter):
 
 
 def is_connected(dmrs_xml, removed_nodes=None, to_remove=None):
+    """Determine if a DMRS graph is connected."""
     graph = get_graph(dmrs_xml, removed_nodes)
     disconnected_nodes = bf(graph)
 
@@ -94,6 +96,7 @@ def is_connected(dmrs_xml, removed_nodes=None, to_remove=None):
 
 
 def get_graph(dmrs_xml, removed_nodes=None):
+    """Obtain a graph representation of the DMRS"""
 
     nodes = set()
     links = defaultdict(set)
@@ -113,6 +116,7 @@ def get_graph(dmrs_xml, removed_nodes=None):
             link_from = entity.attrib['from']
             link_to = entity.attrib['to']
 
+            # Simulate that the graph already has nodes removed
             if link_from not in removed_nodes and link_to not in removed_nodes:
                 links[link_from].add(link_to)
                 links[link_to].add(link_from)
@@ -120,15 +124,29 @@ def get_graph(dmrs_xml, removed_nodes=None):
     return nodes, links
 
 
+MAX_ITER = 100
+
 def bf(graph):
+    """Breadth-first search of the graph for disconnected nodes."""
     nodes, links = graph
     unvisited = set(nodes)
 
+    if len(nodes) == 0:
+        return unvisited
+
+    # Select a random starting node to visit
     start_node = next(iter(nodes))
     unvisited.remove(start_node)
+
+    # Start the explore list with nodes adjacent to the starting node
     explore_list = set(links[start_node])
 
+    cur_iter = 0
     while len(explore_list) > 0:
+
+        if cur_iter >= MAX_ITER:
+            break
+
         new_explore_list = set()
 
         for node in explore_list:
@@ -136,6 +154,7 @@ def bf(graph):
             new_explore_list.update(links[node])
 
         explore_list = filter(lambda x: x in unvisited, new_explore_list)
+        cur_iter += 1
 
     return unvisited
 
