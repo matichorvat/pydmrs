@@ -204,6 +204,8 @@ HEURISTIC_DICT = {'do': [(nearest_right, {'realpred': True, 'pos': 'v', 'tense':
                           COPULA_GPRED],
                   'am': [(nearest_right, {'realpred': True, 'pos': ['v', 'a', 'p'], 'tense': 'pres'}),
                          COPULA_GPRED],
+                  'was': [(nearest_right, {'realpred': True, 'pos': ['v', 'a', 'p'], 'tense': 'past'}),
+                           COPULA_GPRED],
                   'were': [(nearest_right, {'realpred': True, 'pos': ['v', 'a', 'p'], 'tense': 'past'}),
                            COPULA_GPRED],
                   'been': [(nearest_right, {'realpred': True, 'pos': ['v', 'a', 'p'], 'tense': 'pres', 'perf': '+'}),
