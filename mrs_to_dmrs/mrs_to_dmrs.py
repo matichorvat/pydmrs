@@ -7,7 +7,7 @@ import argparse
 import xml.etree.ElementTree as xml
 
 from delphin.mrs import simplemrs, dmrx
-
+from delphin._exceptions import XmrsDeserializationError as XDE
 
 def extract_ace_mrs(file_content):
     mrs_chunks = file_content.split('\n\n')
@@ -49,18 +49,20 @@ def make_sure_path_exists(path):
             raise
 
 
-def mrs_to_dmrs(mrs):
-    if mrs is None or mrs.startswith('SKIP'):
+def mrs_to_dmrs(mrs, ignore_errors=False):
+    if mrs is None or mrs == '' or mrs.startswith('SKIP'):
         return '<dmrs></dmrs>'
 
-    simplemrs_repr = simplemrs.loads(mrs).next()
-    dmrs_string = dmrx.dumps([simplemrs_repr], pretty_print=True)
+    try:
+        simplemrs_repr = simplemrs.loads(mrs).next()
+        dmrs_string = dmrx.dumps([simplemrs_repr], pretty_print=True)
 
-    parser = xml.XMLParser(encoding='utf-8')
-    dmrs_xml = xml.fromstring(dmrs_string, parser=parser)[0]
-
-    return xml.tostring(dmrs_xml, encoding='utf-8')
-
+        parser = xml.XMLParser(encoding='utf-8')
+        dmrs_xml = xml.fromstring(dmrs_string, parser=parser)[0]
+        return xml.tostring(dmrs_xml, encoding='utf-8')
+    
+    except XDE:
+        return '<dmrs></dmrs>'
 
 
 def dmrs_modify(dmrs_string):
