@@ -10,7 +10,10 @@ from wmap import SourceGraphWMAP
 
 
 def split_dmrs_file(content):
-    return filter(lambda x: x.strip() != '', [x + '</dmrs>' if x.strip() != '' else x for x in content.split('</dmrs>')])
+    content_split = content.split('<dmrs')
+    content_filter = filter(lambda x: x.strip() != '', content_split)
+    content_fixed = [('<dmrs' + x).strip() for x in content_filter]
+    return content_fixed
 
 
 def empty(dmrs_xml):

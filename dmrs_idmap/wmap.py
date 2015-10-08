@@ -10,7 +10,7 @@ def load_wmap(filename):
                 continue
 
             try:
-                wmap[entry[1]] = int(entry[0])
+                wmap[entry[1].decode('utf-8')] = int(entry[0])
 
             except ValueError:
                 pass
