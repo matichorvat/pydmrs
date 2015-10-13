@@ -22,6 +22,6 @@ def handle_ltop_links(dmrs_xml):
         dmrs_xml.remove(link)
 
     dmrs_xml.attrib['LTOP'] = ltop
-    del dmrs_xml.attrib['index']
+    #del dmrs_xml.attrib['index']
 
     return dmrs_xml

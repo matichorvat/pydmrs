@@ -11,7 +11,7 @@ import token_align
 import unaligned_tokens_align
 import label
 import filter_gpred
-import remove_ltop
+import handle_ltop
 from utility import empty
 
 
@@ -55,7 +55,7 @@ def process(dmrs, untok, tok,
             unaligned_align_opt=False,
             punc_opt=False,
             label_opt=False,
-            remove_ltop_opt=False,
+            handle_ltop_opt=False,
             gpred_filter=None,
             gpred_curb_opt=None,
             attach_untok=False,
@@ -73,8 +73,8 @@ def process(dmrs, untok, tok,
     if empty(dmrs_xml):
         return dmrs
 
-    if remove_ltop_opt:
-        dmrs_xml = remove_ltop.remove_ltop_links(dmrs_xml)
+    if handle_ltop_opt:
+        dmrs_xml = handle_ltop.handle_ltop_links(dmrs_xml)
 
     if gpred_filter is not None:
         dmrs_xml = filter_gpred.filter_gpred(dmrs_xml, gpred_filter)
@@ -119,8 +119,8 @@ if __name__ == '__main__':
                         help='Create punctuation nodes and links, and align them to punctuation tokens.')
     parser.add_argument('-l', '--label', action='store_true',
                         help='Create label attribute for nodes and links.')
-    parser.add_argument('-r', '--remove_ltop', action='store_true',
-                        help='Remove LTOP link originating from non-existing node with id 0.')
+    parser.add_argument('-r', '--handle_ltop', action='store_true',
+                        help='Remove LTOP link originating from non-existing node with id 0 and add it as an attribute.')
     parser.add_argument('-f', '--filter_gpred', default=None,
                         help='Filter out unneeded general predicate nodes and links. Specify filename with the filter.')
     parser.add_argument('-g', '--gpred_curb', default=None, type=int,
@@ -155,7 +155,7 @@ if __name__ == '__main__':
                                  unaligned_align_opt=args.unaligned_align,
                                  punc_opt=args.punctuation,
                                  label_opt=args.label,
-                                 remove_ltop_opt=args.remove_ltop,
+                                 handle_ltop_opt=args.handle_ltop,
                                  gpred_filter=gpred_filter,
                                  gpred_curb_opt=args.gpred_curb,
                                  attach_untok=args.attach_untok,
@@ -163,5 +163,5 @@ if __name__ == '__main__':
         
         out.write('%s\n\n' % dmrs_processed)
 
-    if args.output != '-':
+    if args.output_dmrs != '-':
         out.close()
