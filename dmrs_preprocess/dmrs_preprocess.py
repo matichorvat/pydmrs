@@ -77,7 +77,7 @@ def process(dmrs, untok, tok,
         dmrs_xml = handle_ltop.handle_ltop_links(dmrs_xml)
 
     if gpred_filter is not None:
-        dmrs_xml = filter_gpred.filter_gpred(dmrs_xml, gpred_filter)
+        dmrs_xml = filter_gpred.filter_gpred(dmrs_xml, gpred_filter, handle_ltop=handle_ltop_opt)
 
     if token_align_opt:
         dmrs_xml = token_align.align(dmrs_xml, untok, tok)

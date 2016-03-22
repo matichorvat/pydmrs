@@ -1,164 +1,6 @@
 from collections import defaultdict
 
 
-def parse_gpred_filter_file(filename):
-    filter_out = set()
-    filter_in = set()
-
-    with open(filename, 'rb') as f:
-        yes = no = False
-
-        for line in f:
-            line = line.strip()
-
-            if line == '' or line == '#':
-                continue
-            elif line.startswith('KEEP'):
-                yes = True
-            elif line.startswith('FILTER'):
-                no = True
-                yes = False
-            elif yes:
-                filter_in.add(line)
-            elif no:
-                filter_out.add(line)
-
-    return filter_out
-
-
-def filter_gpred(dmrs_xml, gpred_filter):
-    '''
-    Remove general predicate nodes on the filter list from the DMRS.
-    :param dmrs_xml: Input DMRS XML
-    :param gpred_filters: A set of general predicates to filter
-    :return: Modified DMRS XML
-    '''
-    remove_nodes = dict()
-    remove_links = set()
-
-    # Find general predicate nodes to filter
-    for entity in dmrs_xml:
-        if entity.tag == 'node':
-            node = entity
-            node_id = node.attrib['nodeid']
-            gpred_rel = None
-
-            for node_info in node:
-                if node_info.tag == 'realpred':
-                    break
-                elif node_info.tag == 'gpred':
-                    gpred_rel = node_info.text
-                    break
-
-            if gpred_rel and gpred_rel in gpred_filter:
-                remove_nodes[node_id] = node
-
-    # Test whether removing a node would result in a disconnected graph. Remove only the ones that do not.
-    removed_nodes = dict()
-    removed_node_ids = set()
-
-    already_disconnected = not is_connected(dmrs_xml)
-
-    for node_id, node in remove_nodes.items():
-        if not already_disconnected and not is_connected(dmrs_xml, removed_nodes=(removed_node_ids | {node_id}), to_remove=remove_nodes):
-            #print 'Removing node with id %s would result in a disconnected graph, so we are not.' % node_id
-            continue
-        else:
-            removed_node_ids.add(node_id)
-            removed_nodes[node_id] = node
-
-    # Actually remove nodes
-    for _, node in removed_nodes.items():
-        dmrs_xml.remove(node)
-
-    # Find links to or from general predicate nodes to filter
-    for entity in dmrs_xml:
-        if entity.tag == 'link':
-            link = entity
-            if link.attrib['from'] in removed_nodes or link.attrib['to'] in removed_nodes:
-                remove_links.add(link)
-
-    for link in remove_links:
-        dmrs_xml.remove(link)
-
-    return dmrs_xml
-
-
-def is_connected(dmrs_xml, removed_nodes=None, to_remove=None):
-    """Determine if a DMRS graph is connected."""
-    graph = get_graph(dmrs_xml, removed_nodes)
-    disconnected_nodes = bf(graph)
-
-    if to_remove is not None:
-        disconnected_nodes -= set(to_remove)
-
-    return True if len(disconnected_nodes) == 0 else False
-
-
-def get_graph(dmrs_xml, removed_nodes=None):
-    """Obtain a graph representation of the DMRS"""
-
-    nodes = set()
-    links = defaultdict(set)
-
-    if removed_nodes is None:
-        removed_nodes = set()
-
-    for entity in dmrs_xml:
-
-        if entity.tag == 'node':
-            node_id = entity.attrib['nodeid']
-
-            if node_id not in removed_nodes:
-                nodes.add(node_id)
-
-        if entity.tag == 'link':
-            link_from = entity.attrib['from']
-            link_to = entity.attrib['to']
-
-            # Simulate that the graph already has nodes removed
-            if link_from not in removed_nodes and link_to not in removed_nodes:
-                links[link_from].add(link_to)
-                links[link_to].add(link_from)
-
-    return nodes, links
-
-
-MAX_ITER = 100
-
-def bf(graph):
-    """Breadth-first search of the graph for disconnected nodes."""
-    nodes, links = graph
-    unvisited = set(nodes)
-
-    if len(nodes) == 0:
-        return unvisited
-
-    # Select a random starting node to visit
-    start_node = next(iter(nodes))
-    unvisited.remove(start_node)
-
-    # Start the explore list with nodes adjacent to the starting node
-    explore_list = set(links[start_node])
-
-    cur_iter = 0
-    while len(explore_list) > 0:
-
-        if cur_iter >= MAX_ITER:
-            break
-
-        new_explore_list = set()
-
-        for node in explore_list:
-            unvisited.remove(node)
-            new_explore_list.update(links[node])
-
-        explore_list = filter(lambda x: x in unvisited, new_explore_list)
-        cur_iter += 1
-
-    return unvisited
-
-
 def curb_gpred_spans(dmrs_xml, max_tokens=3):
     '''
     Remove general predicate node token alignments if a general predicate node spans more than max_tokens.
@@ -190,3 +32,181 @@ def curb_gpred_spans(dmrs_xml, max_tokens=3):
             entity.attrib['tokalign'] = ''
 
     return dmrs_xml
+
+
+def filter_gpred(dmrs_xml, gpred_filter, handle_ltop=False, allow_disconnected_dmrs=False):
+    '''
+    Remove general predicate nodes on the filter list from the DMRS.
+    :param dmrs_xml: Input DMRS XML
+    :param gpred_filters: A set of general predicates to filter
+    :param handle_ltop: Boolean indicating whether to reassign ltop from filtered gpred
+    :param allow_disconnected_dmrs: Remove gpred nodes even if their removal would result in a disconnected DMRS.
+     If DMRS was already disconnected, gpred nodes are removed regardless.
+    :return: Modified DMRS XML
+    '''
+
+    dmrs_graph, filterable_nodes = parse_dmrs_xml(dmrs_xml, gpred_filter)
+
+    test_connectedness = not allow_disconnected_dmrs and is_connected(dmrs_graph, ignored_nodeids=filterable_nodes)
+
+    # If DMRS should remain connected, check that removing filterable nodes will not result in a disconnected DMRS
+    if test_connectedness:
+        filtered_nodes = set()
+        for node in filterable_nodes:
+            if is_connected(dmrs_graph, removed_nodeids=filtered_nodes | {node}, ignored_nodeids=filterable_nodes):
+                filtered_nodes.add(node)
+
+    else:
+        filtered_nodes = filterable_nodes
+
+    # Remove filtered nodes and their links from the DMRS
+    remove_filtered_nodes(dmrs_xml, filtered_nodes)
+
+    return dmrs_xml
+
+
+def parse_dmrs_xml(dmrs_xml, gpred_filter):
+    """
+    Parse DMRS XML to node and edge sets and identify filterable_nodes.
+    :param dmrs_xml: DMRS XML object
+    :param gpred_filter: A set of general predicates to filter
+    :return: ((nodes, edges), filterable_nodes) tuples
+    """
+
+    nodes = set()
+    links = defaultdict(set)
+    filterable_nodes = set()
+
+    for entity in dmrs_xml:
+        if entity.tag == 'node':
+            node_id = entity.attrib['nodeid']
+            nodes.add(node_id)
+
+            gpred_rel = gpred_node(entity)
+            if gpred_rel is not None and gpred_rel in gpred_filter:
+                filterable_nodes.add(node_id)
+
+        if entity.tag == 'link':
+            link_from = entity.attrib['from']
+            link_to = entity.attrib['to']
+
+            links[link_from].add(link_to)
+            links[link_to].add(link_from)
+
+    return (nodes, links), filterable_nodes
+
+
+def gpred_node(node_xml):
+    """
+    Get gpred node info if it exists, otherwise return None
+    :param node_xml: Node XML object
+    :return: grep_rel string or None
+    """
+
+    for node_info in node_xml:
+        if node_info.tag == 'realpred':
+            return None
+        elif node_info.tag == 'gpred':
+            return node_info.text
+
+    return None
+
+
+def is_connected(dmrs_graph, removed_nodeids=frozenset(), ignored_nodeids=frozenset()):
+    """
+    Determine if a DMRS graph is connected.
+    :param dmrs_graph: Tuple of sets (nodes, edges)
+    :param removed_nodeids: Set of node ids that should be considered as already removed.
+     This is to prevent the need for excessive copying of DMRS graphs for hypothetical node removals.
+    :param ignored_nodeids: Set of node ids that should not be considered as disconnected if found as such.
+     This is to prevent nodes that are going to be filtered out later from affecting results of connectivity test.
+    :return: True if DMRS is connected, otherwise False.
+    """
+    disconnected = compute_disconnected_nodeids(dmrs_graph, removed_nodeids=removed_nodeids)
+    return len(disconnected - ignored_nodeids) == 0
+
+
+def compute_disconnected_nodeids(dmrs_graph, removed_nodeids=frozenset()):
+    """
+    Search for disconnected nodes.
+    :param dmrs_graph: Tuple of sets (nodes, edges)
+    :param removed_nodeids: Set of node ids that should be considered as already removed.
+     This is to prevent the need for excessive copying of DMRS graphs for hypothetical node removals.
+    :return: Set of disconnected node ids
+    """
+
+    nodes, edges = dmrs_graph
+
+    # Initialize the set of node that have not been visited yet
+    unvisited_nodeids = set(nodes) - removed_nodeids
+    if not unvisited_nodeids:
+        return unvisited_nodeids
+
+    start_id = next(iter(unvisited_nodeids))
+
+    # Start the explore set with nodes adjacent to the starting node
+    explore_set = get_neighbours(start_id, edges) & unvisited_nodeids
+    unvisited_nodeids.remove(start_id)
+
+    # Iteratively visit a node and update the explore set with neighbouring nodes until explore set empty
+    while explore_set:
+        node = explore_set.pop()
+        unvisited_nodeids.remove(node)
+        explore_set.update(get_neighbours(node, edges) & unvisited_nodeids)
+
+    return unvisited_nodeids
+
+
+def get_neighbours(node, edges):
+    return edges[node]
+
+
+def remove_filtered_nodes(dmrs_xml, filtered_nodes):
+    """
+    Remove nodes on filtered_nodes list and associated links from dmrs_xml.
+    :param dmrs_xml:
+    :param filtered_nodes:
+    """
+
+    entities_to_remove = []
+
+    for entity in dmrs_xml:
+        if entity.tag == 'node':
+            node_id = entity.attrib['nodeid']
+            if node_id in filtered_nodes:
+                entities_to_remove.append(entity)
+
+        if entity.tag == 'link':
+            link_from = entity.attrib['from']
+            link_to = entity.attrib['to']
+
+            if link_from in filtered_nodes or link_to in filtered_nodes:
+                entities_to_remove.append(entity)
+
+    for entity in entities_to_remove:
+        dmrs_xml.remove(entity)
+
+
+def parse_gpred_filter_file(filename):
+    filter_out = set()
+    filter_in = set()
+
+    with open(filename, 'rb') as f:
+        yes = no = False
+
+        for line in f:
+            line = line.strip()
+
+            if line == '' or line == '#':
+                continue
+            elif line.startswith('KEEP'):
+                yes = True
+            elif line.startswith('FILTER'):
+                no = True
+                yes = False
+            elif yes:
+                filter_in.add(line)
+            elif no:
+                filter_out.add(line)
+
+    return filter_out
