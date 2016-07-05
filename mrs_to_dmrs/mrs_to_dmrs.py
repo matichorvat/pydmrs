@@ -54,11 +54,11 @@ def mrs_to_dmrs(mrs, ignore_errors=False):
         return '<dmrs></dmrs>'
 
     try:
-        simplemrs_repr = simplemrs.loads(mrs).next()
-        dmrs_string = dmrx.dumps([simplemrs_repr], pretty_print=True)
+        simplemrs_repr = simplemrs.loads_one(mrs)
+        dmrs_string = dmrx.dumps_one(simplemrs_repr, pretty_print=True)
 
         parser = xml.XMLParser(encoding='utf-8')
-        dmrs_xml = xml.fromstring(dmrs_string, parser=parser)[0]
+        dmrs_xml = xml.fromstring(dmrs_string.encode('utf-8'), parser=parser)[0]
         return xml.tostring(dmrs_xml, encoding='utf-8')
     
     except XDE:
