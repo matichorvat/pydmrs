@@ -12,6 +12,7 @@ import unaligned_tokens_align
 import label
 import filter_gpred
 import handle_ltop
+import cycle_remove
 from utility import empty
 
 
@@ -58,6 +59,7 @@ def process(dmrs, untok, tok,
             handle_ltop_opt=False,
             gpred_filter=None,
             gpred_curb_opt=None,
+            cycle_remove_opt=False,
             attach_untok=False,
             attach_tok=False):
 
@@ -97,6 +99,9 @@ def process(dmrs, untok, tok,
     if label_opt:
         dmrs_xml = label.create_label(dmrs_xml, carg_clean=True)
 
+    if cycle_remove_opt:
+        dmrs_xml = cycle_remove.cycle_remove(dmrs_xml)
+
     if attach_untok:
         dmrs_xml.attrib['untok'] = untok
 
@@ -125,6 +130,8 @@ if __name__ == '__main__':
                         help='Filter out unneeded general predicate nodes and links. Specify filename with the filter.')
     parser.add_argument('-g', '--gpred_curb', default=None, type=int,
                         help='Curb the spans of general predicate nodes to the specified number of tokens. If exceeded, the alignment for the node is removed.')
+    parser.add_argument('-g', '--cycle_remove', action='store_true',
+                        help='Remove cycles in the DMRS graph.')
     parser.add_argument('-au', '--attach_untok', action='store_true', help='Attach the untokenized sentence to DMRS.')
     parser.add_argument('-at', '--attach_tok', action='store_true', help='Attach the tokenized sentence to DMRS.')
     parser.add_argument('input_dmrs', help='Specify input dmrs file')
@@ -157,6 +164,7 @@ if __name__ == '__main__':
                                  label_opt=args.label,
                                  handle_ltop_opt=args.handle_ltop,
                                  gpred_filter=gpred_filter,
+                                 cycle_remove_opt=args.cycle_remove,
                                  gpred_curb_opt=args.gpred_curb,
                                  attach_untok=args.attach_untok,
                                  attach_tok=args.attach_tok)
