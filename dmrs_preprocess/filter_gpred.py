@@ -34,7 +34,7 @@ def curb_gpred_spans(dmrs_xml, max_tokens=3):
     return dmrs_xml
 
 
-def filter_gpred(dmrs_xml, gpred_filter, handle_ltop=False, allow_disconnected_dmrs=False):
+def filter_gpred(dmrs_xml, gpred_filter, handle_ltop=True, allow_disconnected_dmrs=False):
     """
     Remove general predicate nodes on the filter list from the DMRS.
     :param dmrs_xml: Input DMRS XML
@@ -256,21 +256,22 @@ def parse_gpred_filter_file(filename):
     filter_in = set()
 
     with open(filename, 'rb') as f:
-        yes = no = False
 
         for line in f:
             line = line.strip()
 
             if line == '' or line == '#':
                 continue
-            elif line.startswith('KEEP'):
-                yes = True
-            elif line.startswith('FILTER'):
-                no = True
-                yes = False
-            elif yes:
-                filter_in.add(line)
-            elif no:
-                filter_out.add(line)
+
+            entry = line.split('\t')
+
+            assert len(entry) == 2
+
+            if entry[1] == 'yes':
+                filter_in.add(entry[0])
+            elif entry[1] == 'no':
+                filter_out.add(entry[0])
+            else:
+                raise Exception('Unknown option: %s' % line)
 
     return filter_out

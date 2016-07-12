@@ -1,111 +1,108 @@
-KEEP
-generic_entity
-basic_card
-compound_name
-place_n
-addressee
-nominalization
-
-card
-dofm
-dofw
-greet
-holiday
-meas_np
-minute
-mofy
-named_n
-named
-numbered_hour
-ord
-polite
-season
-year_range
-yofc
-
-abstr_deg
-all+too
-appos
-compound
-comp_enough
-comp_less
-comp_not+so
-comp_not+too
-comp
-comp_so
-comp_too
-discourse
-every_q
-excl
-fraction
-freeative_ever_q
-freeative_q
-fw_seq
-implicit_conj
-little-few_a
-loc_nonsp
-manner
-measure
-much-many_a
-neg
-ne_x
-num_seq
-of_p
-parenthetical
-part_of
-person
-plus
-poss
-pron
-reason
-recip_pro
-refl_mod
-some_q
-subord
-superl
-temp_loc_x
-temp
-thing
-times
-time_n
-unspec_manner
-which_q
-with_p
-
-comp_equal
-relative_mod
-prednom_state
-
-
-FILTER
-focus_d
-parg_d
-approx_grad
-cop_id
-def_explicit_q
-def_implicit_q
-ellipsis_expl
-ellipsis
-elliptical_n
-eventuality
-generic_nom
-generic_verb
-hour_prep
-idiom_q_i
-id
-interval_p_end
-interval_p_start
-interval
-number_q
-pronoun_q
-property
-proper_q
-prpstn_to_prop
-string
-timezone_p
-udef_q
-unknown
-unspec_adj
-v_event
-
-ellipsis_ref
+abstr_deg	yes
+addressee	yes
+all+too	yes
+appos	yes
+approx_grad	no
+be_v_id	yes
+be_v_nv	yes
+card	yes
+comp	yes
+comp_enough	yes
+comp_equal	yes
+comp_less	yes
+comp_not+so	yes
+comp_not+too	yes
+comp_so	yes
+comp_too	yes
+compound	yes
+cop_id	no
+def_explicit_q	no
+def_implicit_q	no
+discourse	yes
+dofm	yes
+dofw	yes
+ellipsis	no
+ellipsis_expl	no
+ellipsis_ref	no
+elliptical_n	no
+eventuality	no
+every_q	yes
+excl	yes
+few+if+any_a	yes
+focus_d	no
+fraction	yes
+free_relative_ever_q	yes
+free_relative_q	yes
+fw_seq	yes
+generic_entity	yes
+generic_nom	no
+generic_v	yes
+generic_verb	no
+greet	yes
+holiday	yes
+hour_prep	no
+id	no
+idiom_q_i	no
+implicit_conj	yes
+interval	no
+interval_p_end	no
+interval_p_start	no
+little-few_a	yes
+loc_nonsp	yes
+manner	yes
+meas_np	yes
+measure	yes
+minute	yes
+mofy	yes
+much-many_a	yes
+named	yes
+named_n	yes
+ne_x	yes
+neg	yes
+nominalization	yes
+nontemp_loc_nonsp	yes
+not_x_deg	yes
+num_seq	yes
+number_q	no
+numbered_hour	yes
+of_p	yes
+ord	yes
+parenthetical	yes
+parg_d	no
+part_of	yes
+person	yes
+place_n	yes
+plus	yes
+polite	yes
+poss	yes
+prednom_state	yes
+pron	yes
+pronoun_q	no
+proper_q	no
+property	no
+prpstn_to_prop	no
+reason	yes
+recip_pro	yes
+refl_mod	yes
+relative_mod	yes
+season	yes
+some_q	yes
+string	no
+subord	yes
+superl	yes
+temp	yes
+temp_loc_nonsp	yes
+temp_loc_x	yes
+thing	yes
+time_n	yes
+times	yes
+timezone_p	no
+udef_q	no
+unknown	no
+unspec_adj	no
+unspec_manner	yes
+v_event	no
+which_q	yes
+with_p	yes
+year_range	yes
+yofc	yes
