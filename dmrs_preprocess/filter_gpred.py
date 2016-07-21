@@ -166,8 +166,8 @@ def compute_disconnected_nodeids(dmrs_graph, removed_nodeids=frozenset()):
     return unvisited_nodeids
 
 
-def get_neighbours(node, edges):
-    return edges[node]
+def get_neighbours(node, edges, ignore_edge_to_self=True):
+    return edges[node] - {node} if ignore_edge_to_self else edges[node]
 
 
 def choose_new_ltop(dmrs_xml, dmrs_graph, filtered_nodes):
