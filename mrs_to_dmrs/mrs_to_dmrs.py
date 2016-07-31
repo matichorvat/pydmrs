@@ -7,7 +7,8 @@ import argparse
 import xml.etree.ElementTree as xml
 
 from delphin.mrs import simplemrs, dmrx
-from delphin._exceptions import XmrsDeserializationError as XDE
+from delphin.exceptions import XmrsDeserializationError as XDE
+
 
 def extract_ace_mrs(file_content):
     mrs_chunks = file_content.split('\n\n')
