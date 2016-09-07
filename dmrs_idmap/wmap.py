@@ -4,7 +4,7 @@ def load_wmap(filename):
 
     with open(filename, 'rb') as fp:
         for line in fp:
-            entry = line.split('\t')
+            entry = line.strip().split('\t')
 
             if len(entry) != 2:
                 continue
