@@ -2,7 +2,7 @@ import re
 import itertools
 import xml.etree.ElementTree as xml
 
-from graph import load_xml, dump_xml
+from graph import load_xml, dump_xml, Edge
 
 
 def cycle_remove(dmrs_xml, debug=False, cnt=None):
@@ -261,7 +261,8 @@ def process_conjunction_verb_or_adj(graph, cycle, cut=True):
     """
     Match a cycle if there is a conjunction of verbs or adjectives: conjunction of two verbs or two adjectives and those
     two verbs or two adjectives in turn connect to at least one shared node. Edges from two verbs or adjectives to shared
-    nodes are removed if cut is set to True.
+    nodes are removed if cut is set to True and replaced by an edge going to the same shared node but originating from the
+    conjunction node.
     :param graph: DmrsGraph object
     :param cycle: Set of Node objects in the cycle
     :param cut: If True and cycle is matched, the cycle is broken by removing a target edge
@@ -296,8 +297,17 @@ def process_conjunction_verb_or_adj(graph, cycle, cut=True):
             for node in common_outgoing_nodes:
                 edges_to_cut.extend([edge for edge in graph.get_incoming_node_edges(node) if edge.from_node in verb_or_adj_nodes])
 
+            edges_to_create = {}
+
             for edge in edges_to_cut:
                 graph.edges.remove(edge)
+                edges_to_create[(edge.to_node, edge.label)] = edge.xml_entity
+
+            # Create a new edge for every distinct shared node/label pair and add it to the edge set
+            for (to_node, label), xml_entity in edges_to_create.items():
+                xml_entity.attrib['from'] = conj_node.node_id
+                joint_edge = Edge(conj_node, to_node, label, xml_entity)
+                graph.edges.add(joint_edge)
 
         return True
 

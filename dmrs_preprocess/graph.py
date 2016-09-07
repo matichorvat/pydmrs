@@ -202,7 +202,7 @@ def load_xml(dmrs_xml):
 
             tokalign = element.attrib.get('tokalign')
 
-            if tokalign == '-1':
+            if tokalign == '-1' or tokalign is None:
                 tokalign = []
             else:
                 tokalign = [int(tok) for tok in tokalign.split(' ') if tok != '']
