@@ -12,6 +12,7 @@ import unaligned_tokens_align
 import label
 import filter_gpred
 import handle_ltop
+import handle_unknown
 import cycle_remove
 from utility import empty
 
@@ -61,7 +62,8 @@ def process(dmrs, untok, tok,
             gpred_curb_opt=None,
             cycle_remove_opt=False,
             attach_untok=False,
-            attach_tok=False):
+            attach_tok=False,
+            unknown_handle_lemmatizer=None):
 
     parser = xml.XMLParser(encoding='utf-8')
 
@@ -96,6 +98,9 @@ def process(dmrs, untok, tok,
     if punc_opt:
         pass
 
+    if unknown_handle_lemmatizer is not None:
+        dmrs_xml = handle_unknown.handle_unknown_nodes(dmrs_xml, unknown_handle_lemmatizer)
+
     if label_opt:
         dmrs_xml = label.create_label(dmrs_xml, carg_clean=True)
 
@@ -126,6 +131,8 @@ if __name__ == '__main__':
                         help='Create label attribute for nodes and links.')
     parser.add_argument('-r', '--handle_ltop', action='store_true',
                         help='Remove LTOP link originating from non-existing node with id 0 and add it as an attribute.')
+    parser.add_argument('--handle_unknown', action='store_true',
+                        help='Handle unknown words (e.g. jumped/VBD).')
     parser.add_argument('-f', '--filter_gpred', default=None,
                         help='Filter out unneeded general predicate nodes and links. Specify filename with the filter.')
     parser.add_argument('-g', '--gpred_curb', default=None, type=int,
@@ -150,6 +157,13 @@ if __name__ == '__main__':
     else:
         gpred_filter = None
 
+    if args.handle_unknown:
+        import spacy
+        lemmatizer = spacy.lemmatizer.Lemmatizer.from_package(spacy.util.get_package_by_name('en'))
+
+    else:
+        lemmatizer = None
+
     if args.output_dmrs == '-':
         out = sys.stdout
     else:
@@ -164,6 +178,7 @@ if __name__ == '__main__':
                                  label_opt=args.label,
                                  handle_ltop_opt=args.handle_ltop,
                                  gpred_filter=gpred_filter,
+                                 unknown_handle_lemmatizer=lemmatizer,
                                  cycle_remove_opt=args.cycle_remove,
                                  gpred_curb_opt=args.gpred_curb,
                                  attach_untok=args.attach_untok,
