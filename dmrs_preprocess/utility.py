@@ -24,8 +24,21 @@ def contains_sublist(lst, sublst):
 
 
 def empty(dmrs_xml):
-    count = 0
-    for child in dmrs_xml:
+    for _ in dmrs_xml:
         return False
 
     return True
+
+
+def load_wmap(filename):
+    wmap = dict()
+
+    with open(filename, 'rb') as fp:
+        for line in fp:
+            entry = line.strip().split('\t')
+
+            assert len(entry) == 2
+
+            wmap[entry[1]] = int(entry[0])
+
+    return wmap

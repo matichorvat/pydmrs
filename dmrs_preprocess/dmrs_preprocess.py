@@ -14,7 +14,8 @@ import filter_gpred
 import handle_ltop
 import handle_unknown
 import cycle_remove
-from utility import empty
+import map_tokens
+from utility import empty, load_wmap
 
 
 def split_dmrs_file(content):
@@ -61,6 +62,7 @@ def process(dmrs, untok, tok,
             gpred_filter=None,
             gpred_curb_opt=None,
             cycle_remove_opt=False,
+            map_node_tokens=None,
             attach_untok=False,
             attach_tok=False,
             unknown_handle_lemmatizer=None):
@@ -107,6 +109,10 @@ def process(dmrs, untok, tok,
     if cycle_remove_opt:
         dmrs_xml = cycle_remove.cycle_remove(dmrs_xml)
 
+    if map_node_tokens is not None:
+        wmap = map_node_tokens
+        dmrs_xml = map_tokens.map_tokens(dmrs_xml, tok, wmap)
+
     if attach_untok:
         dmrs_xml.attrib['untok'] = untok
 
@@ -139,6 +145,8 @@ if __name__ == '__main__':
                         help='Curb the spans of general predicate nodes to the specified number of tokens. If exceeded, the alignment for the node is removed.')
     parser.add_argument('-g', '--cycle_remove', action='store_true',
                         help='Remove cycles in the DMRS graph.')
+    parser.add_argument('-m', '--map_node_tokens', default=None,
+                        help='Add tokens and token idx to nodes. Requires a word map file to be specified.')
     parser.add_argument('-au', '--attach_untok', action='store_true', help='Attach the untokenized sentence to DMRS.')
     parser.add_argument('-at', '--attach_tok', action='store_true', help='Attach the tokenized sentence to DMRS.')
     parser.add_argument('input_dmrs', help='Specify input dmrs file')
@@ -164,13 +172,18 @@ if __name__ == '__main__':
     else:
         lemmatizer = None
 
+    if args.map_node_tokens is not None:
+        wmap = load_wmap(args.map_node_tokens)
+    else:
+        wmap = None
+
     if args.output_dmrs == '-':
         out = sys.stdout
     else:
         out = open(args.output_dmrs, 'wb')
 
     dmrs_processed_list = list()
-    for dmrs, untok, tok in zip(dmrs_list, untok_list, tok_list):
+    for dmrs, untok, tok, idx in zip(dmrs_list, untok_list, tok_list):
         dmrs_processed = process(dmrs, untok, tok,
                                  token_align_opt=args.token_align,
                                  unaligned_align_opt=args.unaligned_align,
@@ -181,9 +194,10 @@ if __name__ == '__main__':
                                  unknown_handle_lemmatizer=lemmatizer,
                                  cycle_remove_opt=args.cycle_remove,
                                  gpred_curb_opt=args.gpred_curb,
+                                 map_node_tokens=wmap,
                                  attach_untok=args.attach_untok,
                                  attach_tok=args.attach_tok)
-        
+
         out.write('%s\n\n' % dmrs_processed)
 
     if args.output_dmrs != '-':
