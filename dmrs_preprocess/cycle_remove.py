@@ -293,21 +293,21 @@ def process_conjunction_verb_or_adj(graph, cycle, cut=True):
             continue
 
         if cut:
-            edges_to_cut = []
+            edge_distances = []
             for node in common_outgoing_nodes:
-                edges_to_cut.extend([edge for edge in graph.get_incoming_node_edges(node) if edge.from_node in verb_or_adj_nodes])
+                for edge in graph.get_incoming_node_edges(node):
+                    #print edge.from_node.tokalign, edge.to_node.tokalign
+                    if edge.from_node not in verb_or_adj_nodes or not edge.from_node.tokalign or not edge.to_node.tokalign:
+                        continue
 
-            edges_to_create = {}
+                    edge_distance = min([abs(x - y) for x, y in itertools.product(edge.from_node.tokalign, edge.to_node.tokalign)])
+                    edge_distances.append((edge_distance, edge))
 
-            for edge in edges_to_cut:
+
+            edge_distances = sorted(edge_distances, key=lambda x: x[0])
+
+            for _, edge in edge_distances[1:]:
                 graph.edges.remove(edge)
-                edges_to_create[(edge.to_node, edge.label)] = edge.xml_entity
-
-            # Create a new edge for every distinct shared node/label pair and add it to the edge set
-            for (to_node, label), xml_entity in edges_to_create.items():
-                xml_entity.attrib['from'] = conj_node.node_id
-                joint_edge = Edge(conj_node, to_node, label, xml_entity)
-                graph.edges.add(joint_edge)
 
         return True
 
