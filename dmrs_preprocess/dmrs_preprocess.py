@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 import os
 import errno
@@ -143,7 +143,7 @@ if __name__ == '__main__':
                         help='Filter out unneeded general predicate nodes and links. Specify filename with the filter.')
     parser.add_argument('-g', '--gpred_curb', default=None, type=int,
                         help='Curb the spans of general predicate nodes to the specified number of tokens. If exceeded, the alignment for the node is removed.')
-    parser.add_argument('-g', '--cycle_remove', action='store_true',
+    parser.add_argument('--cycle_remove', action='store_true',
                         help='Remove cycles in the DMRS graph.')
     parser.add_argument('-m', '--map_node_tokens', default=None,
                         help='Add tokens and token idx to nodes. Requires a word map file to be specified.')
@@ -183,7 +183,7 @@ if __name__ == '__main__':
         out = open(args.output_dmrs, 'wb')
 
     dmrs_processed_list = list()
-    for dmrs, untok, tok, idx in zip(dmrs_list, untok_list, tok_list):
+    for dmrs, untok, tok in zip(dmrs_list, untok_list, tok_list):
         dmrs_processed = process(dmrs, untok, tok,
                                  token_align_opt=args.token_align,
                                  unaligned_align_opt=args.unaligned_align,

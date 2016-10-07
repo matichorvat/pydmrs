@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import os
 import sys
 import errno
@@ -151,12 +153,12 @@ if __name__ == '__main__':
 
         out.write(str(vocab_extractor))
 
-    if args.create_wmap is not None:
+    elif args.create_wmap is not None:
 
         wmap = create_wmap(args.create_wmap, existing_wmap=args.wmap)
         out.write(str(wmap))
 
-    if args.map is not None and args.wmap is not None:
+    elif args.map is not None and args.wmap is not None:
         wmap = SourceGraphWMAP(args.wmap)
 
         if args.wmap == '-':
