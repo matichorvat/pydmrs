@@ -13,14 +13,13 @@ def create_label(dmrs_xml, carg_clean=False):
 
             node_attribs = collect_node_attribs(entity)
 
+            # Remove quotes around CARG
+            if node_attribs.get('carg') is not None and carg_clean:
+                clean_carg = node_attribs['carg'][1:-1]
+                entity.attrib['carg'] = clean_carg
+                node_attribs['carg'] = clean_carg
+
             if node_attribs.get('gpred') is not None:
-
-                # Remove quotes around CARG
-                if node_attribs.get('carg') is not None and carg_clean:
-                    clean_carg = node_attribs['carg'][1:-1]
-                    entity.attrib['carg'] = clean_carg
-                    node_attribs['carg'] = clean_carg
-
                 label = label_gpred(node_attribs)
 
             elif node_attribs.get('pos') == 'n':
@@ -46,14 +45,34 @@ def create_label(dmrs_xml, carg_clean=False):
     return dmrs_xml
 
 
+noun_like_gpreds = {'person', 'manner', 'reason', 'place_n', 'time_n', 'minute', 'mofy',
+                    'numbered_hour', 'dofm', 'dofw', 'holiday', 'season', 'year_range',
+                    'yofc', 'thing', 'measure', 'meas_np', 'named', 'named_n'}
+
+
 def label_gpred(node_attribs):
-    label_list = [
-        node_attribs.get('carg'),
-        node_attribs.get('gpred'),
-        node_attribs.get('pers'),
-        node_attribs.get('num'),
-        node_attribs.get('gend')
-    ]
+
+    if node_attribs.get('gpred') == 'pron':
+
+        label_list = [
+            node_attribs.get('gpred'),
+            node_attribs.get('pers'),
+            node_attribs.get('num'),
+            node_attribs.get('gend')
+        ]
+
+    elif node_attribs.get('gpred') in noun_like_gpreds:
+        label_list = [
+            node_attribs.get('carg'),
+            node_attribs.get('gpred'),
+            simplify_gpred_num(node_attribs.get('num'))
+        ]
+
+    else:
+        label_list = [
+            node_attribs.get('carg'),
+            node_attribs.get('gpred')
+        ]
 
     return '_'.join([unicode(x) for x in label_list if x is not None])
 
@@ -116,3 +135,7 @@ def collect_node_attribs(node):
         del node_attribs['sf']
 
     return node_attribs
+
+
+def simplify_gpred_num(gpred_num):
+    return gpred_num if gpred_num == 'pl' else 'sg'
