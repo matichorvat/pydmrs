@@ -296,13 +296,14 @@ def process_conjunction_verb_or_adj(graph, cycle, cut=True):
             edge_distances = []
             for node in common_outgoing_nodes:
                 for edge in graph.get_incoming_node_edges(node):
-                    #print edge.from_node.tokalign, edge.to_node.tokalign
-                    if edge.from_node not in verb_or_adj_nodes or not edge.from_node.tokalign or not edge.to_node.tokalign:
+                    if edge.from_node not in verb_or_adj_nodes:
                         continue
+                    elif not edge.from_node.tokalign or not edge.to_node.tokalign:
+                        edge_distance = 25
+                    else:
+                        edge_distance = min([abs(x - y) for x, y in itertools.product(edge.from_node.tokalign, edge.to_node.tokalign)])
 
-                    edge_distance = min([abs(x - y) for x, y in itertools.product(edge.from_node.tokalign, edge.to_node.tokalign)])
                     edge_distances.append((edge_distance, edge))
-
 
             edge_distances = sorted(edge_distances, key=lambda x: x[0])
 
