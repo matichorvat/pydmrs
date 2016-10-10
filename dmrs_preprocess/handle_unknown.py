@@ -18,10 +18,10 @@ def handle_unknown_nodes(dmrs_xml, lemmatizer):
         if pred is None or not pred.attrib.get('pos') == 'u':
             continue
 
-        old_pos = pred.attrib.get('lemma').split('/')[1]
+        old_pos = pred.attrib.get('lemma').replace('//', '/').split('/')[-1]
         new_pos = convert_pos(old_pos)
 
-        old_lemma = pred.attrib.get('lemma').split('/')[0]
+        old_lemma = '/'.join(pred.attrib.get('lemma').replace('//', '/').split('/')[:-1])
 
         if new_pos == 'n':
             new_lemma = lemmatizer.noun(old_lemma).pop()
