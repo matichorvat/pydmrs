@@ -5,13 +5,14 @@ import xml.etree.ElementTree as xml
 from graph import load_xml, dump_xml, Edge
 
 
-def cycle_remove(dmrs_xml, debug=False, cnt=None):
+def cycle_remove(dmrs_xml, debug=False, cnt=None, realization=False):
     """
     Iteratively remove cycles from graph by 1) checking if they match any of the specific patterns and 2) cutting the
     edge specified by the pattern. If no pattern can be matched against the cycle, remove it by using the default pattern.
     :param dmrs_xml: DMRS XML object
     :param debug: Print information about detected cycles and matched patterns
     :param cnt: If debug is True, needs to be instantiated Counter object to track pattern occurrences
+    :param realization: If True, tokalign cannot be used to decide which edge to cut. A simplified method is used instead.
     :return:
     """
 
@@ -64,14 +65,14 @@ def cycle_remove(dmrs_xml, debug=False, cnt=None):
 
             continue
 
-        if process_conjunction_verb_or_adj(dmrs_graph, cycle):
+        if process_conjunction_verb_or_adj(dmrs_graph, cycle, realization=realization):
             if debug:
                 reent_debug(dmrs_graph, cycle, 'CONJ_VERB_OR_ADJ')
                 cnt['conj_verb_or_adj'] += 1
 
             continue
 
-        if process_default(dmrs_graph, cycle):
+        if process_default(dmrs_graph, cycle, realization=realization):
             if debug:
                 reent_debug(dmrs_graph, cycle, 'DEFAULT_')
                 cnt['default'] += 1
@@ -257,7 +258,7 @@ def is_conj(node):
     return node.pos == 'c' or node.gpred is not None and node.gpred.startswith('implicit_conj')
 
 
-def process_conjunction_verb_or_adj(graph, cycle, cut=True):
+def process_conjunction_verb_or_adj(graph, cycle, cut=True, realization=False):
     """
     Match a cycle if there is a conjunction of verbs or adjectives: conjunction of two verbs or two adjectives and those
     two verbs or two adjectives in turn connect to at least one shared node. Edges from two verbs or adjectives to shared
@@ -266,6 +267,7 @@ def process_conjunction_verb_or_adj(graph, cycle, cut=True):
     :param graph: DmrsGraph object
     :param cycle: Set of Node objects in the cycle
     :param cut: If True and cycle is matched, the cycle is broken by removing a target edge
+    :param realization: If True, tokalign cannot be used to decide which edge to cut. A simplified method is used instead.
     :return: True if cycle is matched, otherwise False
     """
 
@@ -293,19 +295,25 @@ def process_conjunction_verb_or_adj(graph, cycle, cut=True):
             continue
 
         if cut:
-            edge_distances = []
+            edge_scores = []
             for node in common_outgoing_nodes:
                 for edge in graph.get_incoming_node_edges(node):
                     if edge.from_node not in verb_or_adj_nodes:
                         continue
-                    elif not edge.from_node.tokalign or not edge.to_node.tokalign:
-                        edge_distance = 25
+
+                    if not realization:
+                        if not edge.from_node.tokalign or not edge.to_node.tokalign:
+                            edge_score = 25
+                        else:
+                            edge_score = token_distance(edge)
+
+                        edge_scores.append((edge_score, edge))
+
                     else:
-                        edge_distance = min([abs(x - y) for x, y in itertools.product(edge.from_node.tokalign, edge.to_node.tokalign)])
+                        edge_score = modifier_count(edge, graph)
+                        edge_scores.append((edge_score, edge))
 
-                    edge_distances.append((edge_distance, edge))
-
-            edge_distances = sorted(edge_distances, key=lambda x: x[0])
+            edge_distances = sorted(edge_scores, key=lambda x: x[0])
 
             for _, edge in edge_distances[1:]:
                 graph.edges.remove(edge)
@@ -357,12 +365,13 @@ def process_conjunction_index(graph, cycle, cut=True):
     return False
 
 
-def process_default(graph, cycle, cut=True):
+def process_default(graph, cycle, cut=True, realization=False):
     """
     Match any cycle and remove the edge which spans the longest distance between tokens associated with the nodes it connects.
     :param graph: DmrsGraph object
     :param cycle: Set of Node objects in the cycle
     :param cut: If True and cycle is matched, the cycle is broken by removing a target edge
+    :param realization: If True, tokalign cannot be used to decide which edge to cut. A simplified method is used instead.
     :return: True if cycle is matched, otherwise False
     """
 
@@ -371,22 +380,42 @@ def process_default(graph, cycle, cut=True):
         outgoing_edges = [edge for edge in graph.get_outgoing_node_edges(node) if edge.to_node in cycle]
         cycle_edges.extend(outgoing_edges)
 
-    edge_distances = []
+    edge_scores = []
     for edge in cycle_edges:
-        if not edge.from_node.tokalign or not edge.to_node.tokalign:
-            continue
 
-        edge_distance = min([abs(x - y) for x, y in itertools.product(edge.from_node.tokalign, edge.to_node.tokalign)])
-        edge_distances.append((edge_distance, edge))
+        if not realization:
+            if not edge.from_node.tokalign or not edge.to_node.tokalign:
+                continue
 
-    if len(edge_distances) > 0:
+            edge_score = token_distance(edge)
+            edge_scores.append((edge_score, edge))
+
+        else:
+            edge_score = modifier_count(edge, graph)
+            edge_scores.append((edge_score, edge))
+
+    if len(edge_scores) > 0:
         if cut:
-            max_distance_edge = max(edge_distances)[1]
+            max_distance_edge = max(edge_scores)[1]
             graph.edges.remove(max_distance_edge)
 
         return True
 
     return False
+
+
+def token_distance(edge):
+    """
+    Compute the (minimum) token distance that the edge spans. Consequence is cutting the longest edge.
+    """
+    return min([abs(x - y) for x, y in itertools.product(edge.from_node.tokalign, edge.to_node.tokalign)])
+
+
+def modifier_count(edge, graph):
+    """
+    Compute the number of modifiers of to_node. Consequence is cutting the edge of most modified node.
+    """
+    return len(graph.get_incoming_node_edges(edge.to_node)) - 1
 
 
 def reent_debug(graph, cycle, reent_type):

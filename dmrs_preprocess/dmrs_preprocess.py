@@ -15,7 +15,7 @@ import handle_ltop
 import handle_unknown
 import cycle_remove
 import map_tokens
-from utility import empty, load_wmap
+from utility import empty, load_wmap, strip_source_information
 
 
 def split_dmrs_file(content):
@@ -56,7 +56,6 @@ def make_sure_path_exists(path):
 def process(dmrs, untok, tok,
             token_align_opt=False,
             unaligned_align_opt=False,
-            punc_opt=False,
             label_opt=False,
             handle_ltop_opt=False,
             gpred_filter=None,
@@ -65,7 +64,9 @@ def process(dmrs, untok, tok,
             map_node_tokens=None,
             attach_untok=False,
             attach_tok=False,
-            unknown_handle_lemmatizer=None):
+            unknown_handle_lemmatizer=None,
+            realization=False,
+            realization_sanity_check=False):
 
     parser = xml.XMLParser(encoding='utf-8')
 
@@ -85,20 +86,17 @@ def process(dmrs, untok, tok,
     if gpred_filter is not None:
         dmrs_xml = filter_gpred.filter_gpred(dmrs_xml, gpred_filter, handle_ltop=handle_ltop_opt)
 
-    if token_align_opt:
+    if token_align_opt and not realization_sanity_check:
         dmrs_xml = token_align.align(dmrs_xml, untok, tok)
 
-    if unaligned_align_opt:
+    if unaligned_align_opt and not realization_sanity_check:
         if not token_align_opt:
             sys.stderr.write('Warning: Token alignment needed before attempting to align unaligned tokens.')
 
         dmrs_xml = unaligned_tokens_align.align(dmrs_xml, tok)
 
-    if gpred_curb_opt:
+    if gpred_curb_opt and not realization_sanity_check:
         dmrs_xml = filter_gpred.curb_gpred_spans(dmrs_xml)
-
-    if punc_opt:
-        pass
 
     if unknown_handle_lemmatizer is not None:
         dmrs_xml = handle_unknown.handle_unknown_nodes(dmrs_xml, unknown_handle_lemmatizer)
@@ -107,17 +105,20 @@ def process(dmrs, untok, tok,
         dmrs_xml = label.create_label(dmrs_xml, carg_clean=True)
 
     if cycle_remove_opt:
-        dmrs_xml = cycle_remove.cycle_remove(dmrs_xml)
+        dmrs_xml = cycle_remove.cycle_remove(dmrs_xml, realization=realization)
 
-    if map_node_tokens is not None:
+    if map_node_tokens is not None and not realization_sanity_check:
         wmap = map_node_tokens
         dmrs_xml = map_tokens.map_tokens(dmrs_xml, tok, wmap)
 
-    if attach_untok:
+    if attach_untok and not realization_sanity_check:
         dmrs_xml.attrib['untok'] = untok
 
-    if attach_tok:
+    if attach_tok and not realization_sanity_check:
         dmrs_xml.attrib['tok'] = ' '.join(tok)
+
+    if realization_sanity_check:
+        dmrs_xml = strip_source_information(dmrs_xml)
 
     dmrs_string = xml.tostring(dmrs_xml, encoding='utf-8')
 
@@ -131,8 +132,6 @@ if __name__ == '__main__':
                         help='Align tokens to nodes.')
     parser.add_argument('-u', '--unaligned_align', action='store_true',
                         help='Align unaligned tokens to nodes using heuristic rules.')
-    parser.add_argument('-p', '--punctuation', action='store_true',
-                        help='Create punctuation nodes and links, and align them to punctuation tokens.')
     parser.add_argument('-l', '--label', action='store_true',
                         help='Create label attribute for nodes and links.')
     parser.add_argument('-r', '--handle_ltop', action='store_true',
@@ -147,6 +146,10 @@ if __name__ == '__main__':
                         help='Remove cycles in the DMRS graph.')
     parser.add_argument('-m', '--map_node_tokens', default=None,
                         help='Add tokens and token idx to nodes. Requires a word map file to be specified.')
+    parser.add_argument('--realization', action='store_true',
+                        help='Turn on realization mode which does not use tokalign information in graph cycle removal.')
+    parser.add_argument('--realization_sanity_check', action='store_true',
+                        help='Turn on sanity check mode for realization which strips all source sentence information from DMRS graphs.')
     parser.add_argument('-au', '--attach_untok', action='store_true', help='Attach the untokenized sentence to DMRS.')
     parser.add_argument('-at', '--attach_tok', action='store_true', help='Attach the tokenized sentence to DMRS.')
     parser.add_argument('input_dmrs', help='Specify input dmrs file')
@@ -187,7 +190,6 @@ if __name__ == '__main__':
         dmrs_processed = process(dmrs, untok, tok,
                                  token_align_opt=args.token_align,
                                  unaligned_align_opt=args.unaligned_align,
-                                 punc_opt=args.punctuation,
                                  label_opt=args.label,
                                  handle_ltop_opt=args.handle_ltop,
                                  gpred_filter=gpred_filter,
@@ -196,7 +198,9 @@ if __name__ == '__main__':
                                  gpred_curb_opt=args.gpred_curb,
                                  map_node_tokens=wmap,
                                  attach_untok=args.attach_untok,
-                                 attach_tok=args.attach_tok)
+                                 attach_tok=args.attach_tok,
+                                 realization=args.realization,
+                                 realization_sanity_check=args.realization_sanity_check)
 
         out.write('%s\n\n' % dmrs_processed)
 
