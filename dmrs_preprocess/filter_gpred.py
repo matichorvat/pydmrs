@@ -2,13 +2,13 @@ from collections import defaultdict
 
 
 def curb_gpred_spans(dmrs_xml, max_tokens=3):
-    '''
+    """
     Remove general predicate node token alignments if a general predicate node spans more than max_tokens.
     This prevents general predicate nodes from dominating rule extraction.
     :param dmrs_xml: Input DMRS XML
     :param max_tokens: Maximum number of allowed tokens before the entire general predicate node span is removed
     :return: Modified DMRS
-    '''
+    """
 
     for entity in dmrs_xml:
         if entity.tag != 'node':
@@ -217,8 +217,14 @@ def choose_new_ltop(dmrs_xml, dmrs_graph, filtered_nodes):
 
         break
 
-    # As a last resort, choose a random unfiltered node, if it exists
-    if len(nodes - filtered_nodes) > 0:
+    if len(ltop_children) > 0:
+        return ltop_children[0]
+
+    elif len(ltop_parents) > 0:
+        return ltop_parents[0]
+
+    elif len(nodes - filtered_nodes) > 0:
+        # As a last resort, choose a random unfiltered node, if it exists
         return set(nodes - filtered_nodes).pop()
 
     else:

@@ -3,11 +3,45 @@
 import os
 import sys
 import errno
+import logging
 import argparse
+from collections import OrderedDict
 import xml.etree.ElementTree as xml
 
 from delphin.mrs import simplemrs, dmrx
+from delphin.mrs.components import (nodes, links)
 from delphin.exceptions import XmrsDeserializationError as XDE
+
+
+def _encode_dmrs(m, strict=False):
+    _strict = strict
+    attributes = OrderedDict([('cfrom', str(m.cfrom)),
+                              ('cto', str(m.cto))])
+    if m.surface is not None:
+        attributes['surface'] = m.surface
+    if m.identifier is not None:
+        attributes['ident'] = m.identifier
+    if not _strict and m.index is not None:
+        # index corresponds to a variable, so link it to a nodeid
+        index_nodeid = None
+        try:
+            index_nodeid = m.nodeid(m.index)
+        except KeyError:
+            pass
+
+        if index_nodeid is not None:
+            attributes['index'] = str(index_nodeid)
+
+    e = xml.Element('dmrs', attrib=attributes)
+    for node in nodes(m):
+        e.append(dmrx._encode_node(node))
+    for link in links(m):
+        e.append(dmrx._encode_link(link))
+    return e
+
+
+# Override pyDelphin _encode_dmrs method internally so that it again outputs index property on DMRS
+dmrx._encode_dmrs = _encode_dmrs
 
 
 def extract_ace_mrs(file_content):

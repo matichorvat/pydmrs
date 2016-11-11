@@ -87,4 +87,7 @@ def strip_source_information(dmrs_xml):
     if dmrs_xml.attrib['ltop'] != '-1':
         dmrs_xml.attrib['ltop'] = nodeid_map[dmrs_xml.attrib['ltop']]
 
+    if dmrs_xml.attrib['index'] != '-1':
+        dmrs_xml.attrib['index'] = nodeid_map[dmrs_xml.attrib['index']]
+
     return dmrs_xml
