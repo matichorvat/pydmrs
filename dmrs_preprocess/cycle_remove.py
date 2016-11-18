@@ -1,8 +1,9 @@
 import re
 import itertools
+from collections import Counter
 import xml.etree.ElementTree as xml
 
-from graph import load_xml, dump_xml, Edge
+from graph import load_xml, dump_xml
 
 
 def cycle_remove(dmrs_xml, debug=False, cnt=None, realization=False):
@@ -18,81 +19,77 @@ def cycle_remove(dmrs_xml, debug=False, cnt=None, realization=False):
 
     dmrs_graph = load_xml(dmrs_xml)
 
-    has_cycle = False
-    def_or_not_broken = False
+    sentence_cycles = []
 
     while True:
         cycle = dmrs_graph.contains_cycle()
+
         if not cycle:
             break
 
-        if debug:
-            has_cycle = True
-            cnt['cycle'] += 1
-
         if process_conjunction_index(dmrs_graph, cycle):
+            sentence_cycles.append('conj_index')
+
             if debug:
                 reent_debug(dmrs_graph, cycle, 'CONJ_INDEX')
-                cnt['conj_index'] += 1
 
             continue
 
         if process_eq(dmrs_graph, cycle):
+            sentence_cycles.append('eq')
+
             if debug:
                 reent_debug(dmrs_graph, cycle, 'EQ_')
-                cnt['eq'] += 1
 
             continue
 
         if process_control(dmrs_graph, cycle):
+            sentence_cycles.append('control')
+
             if debug:
                 reent_debug(dmrs_graph, cycle, 'CONTROL_')
-                cnt['control'] += 1
 
             continue
 
-        # if process_object_control(dmrs_graph, cycle):
-        #     if debug:
-        #         reent_debug(dmrs_graph, cycle, 'OBJ_CONTROL_')
-        #         cnt['obj_control'] += 1
-        #
-        #     continue
-
         if process_small_clause(dmrs_graph, cycle):
+            sentence_cycles.append('small_clause')
+
             if debug:
                 reent_debug(dmrs_graph, cycle, 'SMALL_CLAUSE')
-                cnt['small_clause'] += 1
 
             continue
 
         if process_conjunction_verb_or_adj(dmrs_graph, cycle, realization=realization):
+            sentence_cycles.append('conj_verb_or_adj')
+
             if debug:
                 reent_debug(dmrs_graph, cycle, 'CONJ_VERB_OR_ADJ')
-                cnt['conj_verb_or_adj'] += 1
 
             continue
 
         if process_default(dmrs_graph, cycle, realization=realization):
+            sentence_cycles.append('default')
+
             if debug:
                 reent_debug(dmrs_graph, cycle, 'DEFAULT_')
-                cnt['default'] += 1
-                def_or_not_broken = True
 
             continue
 
         # Cycle could not be broken
+        sentence_cycles.append('none_detected')
         if debug:
             reent_debug(dmrs_graph, cycle, 'NONE_DETECTED')
-            cnt['none_detected'] += 1
-            def_or_not_broken = True
 
         break
 
-    if debug and has_cycle:
-        cnt['has_cycle'] += 1
+    if cnt is not None:
+        for key, count in Counter(sentence_cycles).most_common():
+            cnt[key] += count
+            cnt['sent_' + key] += 1
 
-    if debug and def_or_not_broken:
-        cnt['def_or_not_broken'] += 1
+        if len(sentence_cycles) > 0:
+            cnt['cycle'] += len(sentence_cycles)
+            cnt['sent_cycle'] += 1
 
     return dump_xml(dmrs_graph)
 
