@@ -95,7 +95,9 @@ def label_verb(node_attribs):
         node_attribs.get('pos'),
         node_attribs.get('sense'),
         node_attribs.get('tense'),
-        node_attribs.get('sf')
+        node_attribs.get('sf'),
+        'perf' if node_attribs.get('perf') != '-' else None,
+        'prog' if node_attribs.get('prog') != '-' else None
     ]
 
     return '_' + '_'.join([unicode(x) for x in label_list if x is not None])
