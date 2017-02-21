@@ -100,6 +100,19 @@ def mrs_to_dmrs(mrs, ignore_errors=False):
         return '<dmrs></dmrs>'
 
 
+def dmrs_to_mrs(dmrs, ignore_errors=False):
+    if dmrs is None or dmrs == '' or dmrs == '<dmrs></dmrs>':
+        return ''
+
+    try:
+        dmrs_repr = dmrx.loads_one(dmrs)
+        mrs_string = simplemrs.dumps_one(dmrs_repr, pretty_print=True)
+        return mrs_string
+
+    except XDE:
+        raise
+
+
 def dmrs_modify(dmrs_string):
     # Load DMRS into XML
     parser = xml.XMLParser(encoding='utf-8')
