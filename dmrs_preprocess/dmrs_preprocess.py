@@ -15,6 +15,7 @@ import handle_ltop
 import handle_unknown
 import cycle_remove
 import map_tokens
+import jaen_transfer_mt_prep
 from utility import empty, load_wmap, strip_source_information
 
 
@@ -66,7 +67,8 @@ def process(dmrs, untok, tok,
             attach_tok=False,
             unknown_handle_lemmatizer=None,
             realization=False,
-            realization_sanity_check=False):
+            realization_sanity_check=False,
+            transfer_mt_prep=False):
 
     parser = xml.XMLParser(encoding='utf-8')
 
@@ -80,22 +82,25 @@ def process(dmrs, untok, tok,
     if empty(dmrs_xml):
         return dmrs
 
+    if transfer_mt_prep:
+        dmrs_xml = jaen_transfer_mt_prep.preprocess(dmrs_xml)
+
     if handle_ltop_opt:
         dmrs_xml = handle_ltop.handle_ltop_links(dmrs_xml)
 
     if gpred_filter is not None:
         dmrs_xml = filter_gpred.filter_gpred(dmrs_xml, gpred_filter, handle_ltop=handle_ltop_opt)
 
-    if token_align_opt and not realization_sanity_check:
+    if token_align_opt and not realization_sanity_check and not transfer_mt_prep:
         dmrs_xml = token_align.align(dmrs_xml, untok, tok)
 
-    if unaligned_align_opt and not realization_sanity_check:
+    if unaligned_align_opt and not realization_sanity_check and not transfer_mt_prep:
         if not token_align_opt:
             sys.stderr.write('Warning: Token alignment needed before attempting to align unaligned tokens.')
 
         dmrs_xml = unaligned_tokens_align.align(dmrs_xml, tok)
 
-    if gpred_curb_opt and not realization_sanity_check:
+    if gpred_curb_opt and not realization_sanity_check and not transfer_mt_prep:
         dmrs_xml = filter_gpred.curb_gpred_spans(dmrs_xml)
 
     if unknown_handle_lemmatizer is not None:
@@ -107,14 +112,14 @@ def process(dmrs, untok, tok,
     if cycle_remove_opt:
         dmrs_xml = cycle_remove.cycle_remove(dmrs_xml, realization=realization)
 
-    if map_node_tokens is not None and not realization_sanity_check:
+    if map_node_tokens is not None and not realization_sanity_check and not transfer_mt_prep:
         wmap = map_node_tokens
         dmrs_xml = map_tokens.map_tokens(dmrs_xml, tok, wmap)
 
-    if attach_untok and not realization_sanity_check:
+    if attach_untok and not realization_sanity_check and not transfer_mt_prep:
         dmrs_xml.attrib['untok'] = untok
 
-    if attach_tok and not realization_sanity_check:
+    if attach_tok and not realization_sanity_check and not transfer_mt_prep:
         dmrs_xml.attrib['tok'] = ' '.join(tok)
 
     if realization_sanity_check:
@@ -150,6 +155,8 @@ if __name__ == '__main__':
                         help='Turn on realization mode which does not use tokalign information in graph cycle removal.')
     parser.add_argument('--realization_sanity_check', action='store_true',
                         help='Turn on sanity check mode for realization which strips all source sentence information from DMRS graphs.')
+    parser.add_argument('--transfer_mt_prep', action='store_true',
+                        help='Preprocess DMRS obtained from transfer MT system.')
     parser.add_argument('-au', '--attach_untok', action='store_true', help='Attach the untokenized sentence to DMRS.')
     parser.add_argument('-at', '--attach_tok', action='store_true', help='Attach the tokenized sentence to DMRS.')
     parser.add_argument('input_dmrs', help='Specify input dmrs file')
@@ -160,8 +167,13 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     dmrs_list = read_file(args.input_dmrs, format='dmrs')
-    untok_list = read_file(args.input_untok, format='untok')
-    tok_list = read_file(args.input_tok, format='tok')
+
+    if not args.transfer_mt_prep:
+        untok_list = read_file(args.input_untok, format='untok')
+        tok_list = read_file(args.input_tok, format='tok')
+    else:
+        untok_list = [''] * len(dmrs_list)
+        tok_list = [''] * len(dmrs_list)
 
     if args.filter_gpred is not None:
         gpred_filter = filter_gpred.parse_gpred_filter_file(args.filter_gpred)
@@ -187,6 +199,7 @@ if __name__ == '__main__':
 
     dmrs_processed_list = list()
     for dmrs, untok, tok in zip(dmrs_list, untok_list, tok_list):
+
         dmrs_processed = process(dmrs, untok, tok,
                                  token_align_opt=args.token_align,
                                  unaligned_align_opt=args.unaligned_align,
@@ -200,7 +213,8 @@ if __name__ == '__main__':
                                  attach_untok=args.attach_untok,
                                  attach_tok=args.attach_tok,
                                  realization=args.realization,
-                                 realization_sanity_check=args.realization_sanity_check)
+                                 realization_sanity_check=args.realization_sanity_check,
+                                 transfer_mt_prep=args.transfer_mt_prep)
 
         out.write('%s\n\n' % dmrs_processed)
 
